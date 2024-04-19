@@ -1,80 +1,126 @@
 #![allow(dead_code)]
-
-// use core::num;
 use std::io;
 
+fn warnings() {
+    print!("!!         ")
+}
+
 fn main() {
-    println!("**************          Welcome to R- Calculator!! (Made by RUST)           **************");
+    println!("\n\n**************                             Welcome to R- Calculator!! (Made by RUST)                             **************");
+    println!("Hi, you are now in our monitor\n");
 
     loop {
-        println!("Please select an operatioon:");
-        println!("1. Addition (+)");
-        println!("2. Subtraction (-)");
-        println!("3. Multiplication (*)");
-        println!("4. Division (/)");
-        println!("5. Modulus (%)");
-        println!("6. Exit");
+        println!("Please input an arithmetic expression:");
 
-        let mut choice = String::new();
+        let mut input: String = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read the line");
 
-        io::stdin().read_line(&mut choice).expect("Failed to read your input");
+        input.retain(|c| !c.is_whitespace());
 
-        let choice: u32 =  match choice.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Invalid input. Please enter a number.");
-                continue;
-            }
-        };
+        let input: &str = input.trim();
 
-        if choice == 6 {
-            println!("||      Thanks for using R-Calculator!      ||");
-            println!("You are exiting now!");
-            break;
+        // println!("{}ok", input);
+
+        if input.is_empty() {
+            warnings();
+            println!("Input cannot be empty. Please try again.\n");
+            continue;
         }
 
-        println!("Enter first number:");
-        let mut num1: String = String::new();
+        if !input
+            .chars()
+            .all(|c: char| c.is_digit(10) || "+-*/% ".contains(c))
+        {
+            warnings();
+            println!("Invalid input: Input contains invalid characters.\n");
+            continue;
+        }
 
-        io::stdin().read_line(&mut num1).expect("Failed to read num 1");
+        let mut parts: Vec<String> = Vec::new();
 
-        let num1: f64 = match num1.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Invalid input. Please enter a number.");
-                continue;
-            }
-        };
-
-        println!("Enter second number:");
-        let mut num2 = String::new();
-        io::stdin().read_line(&mut num2).expect("Failed to read line");
-        let num2: f64 = match num2.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Invalid input. Please enter a number.");
-                continue;
-            }
-        };
-
-        let result = match choice {
-            1 => num1 + num2,
-            2 => num1 - num2,
-            3 => num1 * num2,
-            4 => {
-                if num2 == 0.0 {
-                    println!("Error: Cannot divide by zero. Inter the number again!");
-                    continue;
+        let mut current_part: String = String::new();
+        for c in input.chars() {
+            if c == '+' || c == '-' || c == '*' || c == '/' || c == '%' {
+                if !current_part.is_empty() {
+                    parts.push(current_part.trim().to_string());
+                    current_part.clear();
                 }
-                num1 / num2
+                parts.push(c.to_string());
+            } else {
+                current_part.push(c);
             }
-            
-            5 => num1 % num2,
-            _ => {
-                println!("Invalid choice. Please select a valid operation.");
-                continue;
+        }
+
+        if !current_part.is_empty() {
+            parts.push(current_part.trim().to_string());
+        }
+
+        // for part in &parts {
+        //     println!("Part: {}", part);
+        // }
+
+        // print!("hi");
+
+        let mut result: f64;
+        let mut operator: &str = "*";
+        let mut chk: bool = false;
+
+        if parts[0].chars().all(|c: char| c.is_numeric()) || parts[0] == "+" || parts[0] == "-" {
+            if parts[0] == "-" {
+                result = -1.0;
+                chk = true;
+                // println!("ok line");
+            } else if parts[0] == "+" {
+                result = 1.0;
+                chk = true;
+                // println!("ok line");
+            } else {
+                result = parts[0].parse().expect("Failed to parse first operand");
             }
-        };
-        println!("Result: {}", result);
+
+            for part in parts.iter().skip(1) {
+                if ["+", "-", "*", "/", "%"].contains(&&part[..]) {
+                    if chk {
+                        warnings();
+                        println!("Invalid expression: Two operators encountered consecutively");
+                        break;
+                    } else {
+                        operator = part;
+                        chk = true;
+                    }
+                } else {
+                    let num: f64 = part.parse().expect("Failed to parse operand");
+                    match operator {
+                        "+" => result += num,
+                        "-" => result -= num,
+                        "*" => result *= num,
+                        "/" => result /= num,
+                        "%" => result %= num,
+                        _ => panic!("Invalid operator: '{}'", operator),
+                    }
+                    chk = false;
+                }
+            }
+
+            println!("Result: {}", result);
+
+            println!("Do you want to continue? (yes/no)");
+
+            let mut choice: String = String::new();
+            io::stdin()
+                .read_line(&mut choice)
+                .expect("Failed to read the line");
+            let choice: String = choice.trim().to_lowercase();
+
+            if choice == "no" {
+                println!("||         Thanks for using R-Calculator  :)          ||\n");
+                break;
+            }
+        } else {
+            warnings();
+            println!("Invalid expression: First part must be a number or '+' or '-'");
+        }
     }
 }
